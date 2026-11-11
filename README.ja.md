@@ -26,6 +26,7 @@ Docker で 1 台の PC 上だけで動作し、実機や AWS アカウントは�
 │   10.20.0.30:502  bess-01 (Modbus TCP, CDAB)           │                │                      │
 │   10.20.0.40:161  ups-01 (SNMP)                        │                │                      │
 │   10.20.0.50:47808 crah-01 (BACnet/IP)                 │                │                      │
+│   10.20.0.60:7000 RS-485 バス /dev/ttyUSB0（TCP 経由）: dong-ho-rs485-03 (Modbus RTU)            │
 │     │ 2 秒周期でポーリング                             │                │                      │
 │     ├── telegraf-a (10.20.0.5) ──► mqtt-a ──bridge QoS1──────────┐      │                      │
 │     └── telegraf-b (10.20.0.6) ──► mqtt-b ──bridge QoS1──────────┼──► mqtt-cloud ─► cloud-writer ─► cloud-db
@@ -42,7 +43,7 @@ Docker で 1 台の PC 上だけで動作し、実機や AWS アカウントは�
 - `edge-config` は `up` のたびに 1 回だけ実行され、Point Map から 3 つのファイルを生成します：
   - Telegraf 設定：Modbus TCP と SNMP は modbus-lab の `generate.py` で生成、BACnet は `inputs.execd` プラグイン経由；
   - `edge-app` 用の警報ルール：Point Map の `alerts` 項目から生成；
-  - Grafana ダッシュボード：固定部分 `grafana/dashboards/a04.json` に機器ごとのカードを追加。
+  - Grafana ダッシュボード（ベトナム語 `a04`、日本語 `a04-ja`）：固定部分 `grafana/dashboards/a04.json` に機器ごとのカードを追加。日本語版は `grafana/dashboards/translations.ja.json` で翻訳し、機器名・計測点名・警報内容は Point Map の `ja` ラベルを使用。
 - **全機器を Telegraf で読み取ります**（BACnet を含む）：
   - Telegraf には BACnet 読み取りプラグインがないため、`inputs.execd` でスクリプト `lab/bacnet_execd.py` を実行します。
   - このスクリプトは modbus-lab の `bacnet_io.py` を再利用しています。
@@ -83,6 +84,7 @@ cd demo-a04
 ```
 
 **http://localhost:3300** を開き、最初のデータが来るまで約 20 秒待ちます。ログインは不要です。
+右上の **Tiếng Việt** / **日本語** ボタンでダッシュボードの言語を切り替えます（日本語版：http://localhost:3300/d/a04-ja）。
 もう 1 つターミナルを開き、Edge のルールエンジンの動きをリアルタイムで表示します：
 
 ```bash
@@ -189,7 +191,7 @@ Cảnh báo            edge = 2   cloud = 2   thiếu trên cloud = 0
 
 ```bash
 docker compose stop sim     # 全機器が応答停止
-# 約 10 秒後：🚨 [CRITICAL] Mất liên lạc thiết bị（機器通信途絶）、機器ごとに 1 件（5 機器）
+# 約 10 秒後：🚨 [CRITICAL] Mất liên lạc thiết bị（機器通信途絶）、機器ごとに 1 件（6 機器）
 docker compose start sim    # シミュレータは Point Map の初期値から再開
 ```
 
@@ -237,7 +239,7 @@ docker compose start sim    # シミュレータは Point Map の初期値から
 | TLS なし、MQTT 認証なし | mTLS（IoT Core のデバイス証明書）、TLS 1.3 | ノート PC 内のみで動作 |
 | ブザー／警告灯／SMS はログ行と赤いパネル | ブザー・警告灯用リレー、4G モデム | ハードウェアなし |
 | 機器は modbus-lab シミュレータ、1 コンテナ内（機器ごとに IP） | 実機 | ハードウェアなし |
-| `dong-ho-rs485-03`（USB-RS485 経由の Modbus RTU）は読まない | RS-485 バスを Edge サーバ 1 台に接続 | コンテナから別コンテナの仮想シリアルポートを開けない |
+| `dong-ho-rs485-03` の RS-485 バスは模擬シリアル↔Ethernet 変換器（`10.20.0.60:7000`、RTU over TCP）経由で、Edge ノード 2 台が読む | RS-485 バスを USB で Edge サーバ 1 台に接続、またはシリアル↔Ethernet 変換器経由 | コンテナから別コンテナの仮想シリアルポートを開けない。バスのアドレスは `docker-compose.yml` の `x-serial-tcp` で定義 |
 | Telegraf 用 BACnet スクリプトはデモ専用（`lab/bacnet_execd.py`） | プロジェクトの BACnet コレクタ | modbus-lab には BACnet 読み書き関数のみで、常駐コレクタはまだない |
 | Point Map の警報はすべて CRITICAL | 警報レベルを Point Map で定義 | Point Map に警報レベルの項目がまだない |
 | 制御コマンド（TTL）、AI フラグ、AZ 障害／DR は未実装 | 設計には含まれる | フルデモ版の範囲 |

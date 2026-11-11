@@ -30,7 +30,7 @@
    "gridPos": {
     "x": 12,
     "y": 0,
-    "w": 10,
+    "w": 12,
     "h": 2
    },
    "options": {
@@ -38,21 +38,6 @@
     "content": "## ☁️ CLOUD – AWS Tokyo (giả lập)"
    },
    "id": 2
-  },
-  {
-   "type": "text",
-   "title": "",
-   "gridPos": {
-    "x": 22,
-    "y": 0,
-    "w": 2,
-    "h": 2
-   },
-   "options": {
-    "mode": "html",
-    "content": "<div style=\"text-align:right;font-size:28px;line-height:1.6\"><a href=\"/d/a04?theme=light\" target=\"_self\" title=\"Giao diện sáng (phòng sáng, máy chiếu)\">☀️</a>&nbsp;&nbsp;<a href=\"/d/a04?theme=dark\" target=\"_self\" title=\"Giao diện tối\">🌙</a></div>"
-   },
-   "id": 15
   },
   {
    "type": "stat",
@@ -865,5 +850,31 @@
  "editable": true,
  "tags": [
   "a04"
+ ],
+ "links": [
+  {
+   "title": "Tiếng Việt",
+   "type": "link",
+   "url": "/d/a04",
+   "tooltip": "Dashboard tiếng Việt",
+   "icon": "",
+   "keepTime": true,
+   "includeVars": false,
+   "targetBlank": false,
+   "asDropdown": false,
+   "tags": []
+  },
+  {
+   "title": "日本語",
+   "type": "link",
+   "url": "/d/a04-ja",
+   "tooltip": "日本語のダッシュボード",
+   "icon": "",
+   "keepTime": true,
+   "includeVars": false,
+   "targetBlank": false,
+   "asDropdown": false,
+   "tags": []
+  }
  ]
 }
