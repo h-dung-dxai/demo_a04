@@ -17,6 +17,10 @@ x-lab: &lab
   restart: unless-stopped
   volumes: ["${MODBUS_LAB:-../modbus-lab}:/lab:ro"]
 
+# Bus RS-485 của site nằm sau bộ chuyển serial ↔ Ethernet (RTU over TCP): cổng serial trong Point Map = host:port.
+# sim mở bus ở địa chỉ này; edge-config sinh cấu hình Telegraf đọc qua địa chỉ này. Nhiều bus: cách nhau dấu phẩy.
+x-serial-tcp: &serial-tcp "/dev/ttyUSB0=10.20.0.60:7000"
+
 # Telegraf của edge node: đọc Modbus TCP, SNMP và BACnet (qua inputs.execd chạy script Python của lab)
 x-telegraf: &telegraf
   <<: *lab
@@ -38,13 +42,15 @@ x-edge-mqtt: &edge-mqtt
   networks: [edge, wan]
 
 services:
-  # ---------- Thiết bị giả lập: simulator modbus-lab (Modbus TCP, SNMP, BACnet/IP) ----------
+  # ---------- Thiết bị giả lập: simulator modbus-lab (Modbus TCP, Modbus RTU, SNMP, BACnet/IP) ----------
   # Mang đúng IP thật trong Point Map; trang điều khiển http://localhost:5080
   sim:
     <<: *lab
     command: python /demo/sim_entry.py
     cap_add: [NET_ADMIN]   # gắn IP của từng gateway / thiết bị vào card mạng
-    environment: { SIM_AUTO: "2" }   # giá trị dao động quanh giá trị đặt, mỗi 2 giây
+    environment:
+      SIM_AUTO: "2"              # giá trị dao động quanh giá trị đặt, mỗi 2 giây
+      SERIAL_TCP: *serial-tcp    # bus RS-485 mở qua TCP
     ports: ["127.0.0.1:${SIM_PORT:-5080}:5080"]
     networks: [edge]
     healthcheck:   # healthy khi trang điều khiển đã trả lời (mọi server thiết bị đã chạy)
@@ -57,6 +63,7 @@ services:
     <<: *lab
     restart: "no"
     command: python /demo/gen_edge_config.py /cfg /grafana/a04.json
+    environment: { SERIAL_TCP: *serial-tcp }
     volumes: ["${MODBUS_LAB:-../modbus-lab}:/lab:ro", "edgecfg:/cfg", "./grafana/dashboards:/grafana:ro"]
     network_mode: none
 

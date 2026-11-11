@@ -24,6 +24,7 @@ Demo chứng minh 4 điều:
 │   10.20.0.30:502  bess-01 (Modbus TCP, CDAB)           │                │                      │
 │   10.20.0.40:161  ups-01 (SNMP)                        │                │                      │
 │   10.20.0.50:47808 crah-01 (BACnet/IP)                 │                │                      │
+│   10.20.0.60:7000 bus RS-485 /dev/ttyUSB0 qua TCP: dong-ho-rs485-03 (Modbus RTU)                │
 │     │ poll 2s                                          │                │                      │
 │     ├── telegraf-a (10.20.0.5) ──► mqtt-a ──bridge QoS1──────────┐      │                      │
 │     └── telegraf-b (10.20.0.6) ──► mqtt-b ──bridge QoS1──────────┼──► mqtt-cloud ─► cloud-writer ─► cloud-db
@@ -186,7 +187,7 @@ Cảnh báo            edge = 2   cloud = 2   thiếu trên cloud = 0
 
 ```bash
 docker compose stop sim     # mọi thiết bị ngừng phản hồi
-# sau khoảng 10 giây: 🚨 [CRITICAL] Mất liên lạc thiết bị, một cảnh báo cho mỗi thiết bị (5 thiết bị)
+# sau khoảng 10 giây: 🚨 [CRITICAL] Mất liên lạc thiết bị, một cảnh báo cho mỗi thiết bị (6 thiết bị)
 docker compose start sim    # simulator chạy lại từ giá trị khởi đầu trong Point Map
 ```
 
@@ -234,7 +235,7 @@ Chưa tính thời gian poll: thiết bị được poll mỗi 2 giây, nên th�
 | Không có TLS, không có xác thực MQTT | mTLS (chứng chỉ thiết bị IoT Core), TLS 1.3 | Chỉ chạy nội bộ trên laptop |
 | Còi/đèn/SMS là dòng log và ô màu đỏ | Relay còi/đèn, modem 4G | Không có phần cứng |
 | Thiết bị là simulator modbus-lab, cùng nằm trong 1 container (mỗi thiết bị một IP) | Thiết bị thật | Không có phần cứng |
-| Không đọc `dong-ho-rs485-03` (Modbus RTU qua USB-RS485) | Bus RS-485 cắm vào một server edge | Container không mở được cổng serial ảo của container khác |
+| Bus RS-485 của `dong-ho-rs485-03` nối qua bộ chuyển serial ↔ Ethernet giả lập (`10.20.0.60:7000`, RTU over TCP), cả 2 edge node cùng đọc | Bus RS-485 cắm USB vào một server edge, hoặc qua bộ chuyển serial ↔ Ethernet | Container không mở được cổng serial ảo của container khác. Địa chỉ bus khai báo ở `x-serial-tcp` trong `docker-compose.yml` |
 | Script BACnet cho Telegraf viết riêng cho demo (`lab/bacnet_execd.py`) | Collector BACnet của dự án | modbus-lab mới có hàm đọc/ghi BACnet, chưa có collector chạy liên tục |
 | Mọi cảnh báo trong Point Map đều mức CRITICAL | Mức cảnh báo khai báo trong Point Map | Point Map chưa có trường mức cảnh báo |
 | Chưa có lệnh điều khiển (TTL), cờ AI, Mất AZ/DR | Có trong thiết kế | Thuộc bản demo đầy đủ |

@@ -1,27 +1,33 @@
 """Sinh cấu hình edge từ Point Map của modbus-lab (Point Map là nguồn dữ liệu duy nhất).
 
   python gen_edge_config.py <thư mục ra> <dashboard gốc>
-    devices.conf        inputs Telegraf: Modbus TCP và SNMP (generate.py của modbus-lab, môi trường site)
-                        + BACnet qua inputs.execd (bacnet_execd.py)
+    devices.conf        inputs Telegraf: Modbus TCP, Modbus RTU qua TCP và SNMP (generate.py của modbus-lab,
+                        môi trường site) + BACnet qua inputs.execd (bacnet_execd.py)
     rules.json          tên site + luật cảnh báo (mục alerts của Point Map) cho rule engine edge-app
     grafana/a04.json    dashboard gốc + thẻ từng thiết bị (edge và cloud), mọi điểm đo kèm đơn vị và ngưỡng
 
-Bỏ thiết bị Modbus RTU: bus RS-485 cắm USB vào đúng một server edge, container khác không mở được.
+Modbus RTU: bus RS-485 nằm sau bộ chuyển serial ↔ Ethernet (SERIAL_TCP, cùng giá trị với service sim),
+Telegraf đọc bằng RTU over TCP. Bus không có trong SERIAL_TCP thì bỏ thiết bị trên bus đó (không mở được).
 BACnet: Telegraf không có plugin, nên Telegraf chạy bacnet_execd.py (inputs.execd) để đọc.
 """
 import json
+import os
 import sys
 from pathlib import Path
 
 from generate import generate
-from point_map import DEFAULT_PATH, SITE_ENV, is_rtu, load_or_exit
+from point_map import DEFAULT_PATH, SITE_ENV, SOCKET, is_rtu, load_or_exit, serial_over_tcp
 
 STALE_SECONDS = 10   # không có dữ liệu quá chừng này giây -> cảnh báo mất liên lạc thiết bị
 
 out = Path(sys.argv[1])
 cfg = load_or_exit(DEFAULT_PATH, SITE_ENV)
-rtu = [d["name"] for d in cfg["devices"] if is_rtu(d)]
-cfg["devices"] = [d for d in cfg["devices"] if not is_rtu(d)]
+errors = serial_over_tcp(cfg, dict(m.split("=", 1) for m in os.environ.get("SERIAL_TCP", "").split(",") if m))
+if errors:
+    sys.exit("SERIAL_TCP: " + "; ".join(errors))
+rtu = [d["name"] for d in cfg["devices"] if is_rtu(d) and not d["serial"]["port"].startswith(SOCKET)]
+cfg["devices"] = [d for d in cfg["devices"] if d["name"] not in rtu]
+cfg["alerts"] = [a for a in cfg.get("alerts", []) if a["point"].split(".")[0] not in rtu]
 # chỉ lấy inputs: [agent] và outputs đã có trong telegraf/telegraf.conf (trùng [agent] thì Telegraf báo lỗi)
 telegraf = "\n\n".join(b for b in generate(cfg).split("\n\n")
                        if not b.lstrip().startswith(("[agent]", "[[outputs.")))
@@ -58,6 +64,9 @@ def where(d: dict) -> str:
         return f"SNMP {d['host']}"
     if proto == "bacnet":
         return f"BACnet/IP {d['host']} · instance {d['device_instance']}"
+    if is_rtu(d):
+        return (f"Modbus RTU {d['site_address'].removeprefix('rtu:')} qua TCP "
+                f"{d['serial']['port'].removeprefix(SOCKET)} · thiết bị {d['device_id']}")
     return f"Modbus TCP {d['host']}:{d['port']} · thiết bị {d['device_id']}"
 
 
