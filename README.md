@@ -23,8 +23,8 @@ Demo chứng minh 4 điều:
 │   10.20.0.40:161  ups-01 (SNMP)                        │                │                      │
 │   10.20.0.50:47808 crah-01 (BACnet/IP)                 │                │                      │
 │     │ poll 2s                                          │                │                      │
-│     ├── telegraf-a + bacnet-a (10.20.0.5) ──► mqtt-a ──bridge QoS1──┐   │                      │
-│     └── telegraf-b + bacnet-b (10.20.0.6) ──► mqtt-b ──bridge QoS1──┼──► mqtt-cloud ─► cloud-writer ─► cloud-db
+│     ├── telegraf-a (10.20.0.5) ──► mqtt-a ──bridge QoS1──────────┐      │                      │
+│     └── telegraf-b (10.20.0.6) ──► mqtt-b ──bridge QoS1──────────┼──► mqtt-cloud ─► cloud-writer ─► cloud-db
 │                          │  │                          │  │  (cắt ở đây)│                      │
 │                       edge-app (rule engine)           │                │                      │
 │                          │                             │                │                      │
@@ -36,18 +36,20 @@ Demo chứng minh 4 điều:
 **Thiết bị lấy từ Point Map của modbus-lab** (`../modbus-lab/edge/point-map/devices.yml`). Demo không viết tay thông tin thiết bị nào:
 - `sim` chạy simulator của modbus-lab với `--env site`. Container này nhận đúng các IP thật trong Point Map, nên Telegraf kết nối `10.20.0.21:502` như ở site thật.
 - `edge-config` chạy một lần mỗi khi `up`. Nó sinh 3 file từ Point Map:
-  - cấu hình Telegraf (`generate.py` của modbus-lab) cho Modbus TCP và SNMP;
+  - cấu hình Telegraf: Modbus TCP và SNMP sinh bằng `generate.py` của modbus-lab, BACnet qua plugin `inputs.execd`;
   - luật cảnh báo cho `edge-app`, lấy từ mục `alerts` của Point Map;
   - dashboard Grafana: phần cố định `grafana/dashboards/a04.json`, ghép thêm thẻ của từng thiết bị.
-- `bacnet-a/b` là collector BACnet ở mỗi edge node (Telegraf không đọc BACnet). Collector dùng lại `bacnet_io.py` của modbus-lab và gửi bản tin cùng dạng với Telegraf.
+- **Mọi thiết bị đều đọc bằng Telegraf**, gồm cả BACnet:
+  - Telegraf không có plugin đọc BACnet, nên dùng `inputs.execd` chạy script `lab/bacnet_execd.py`.
+  - Script dùng lại `bacnet_io.py` của modbus-lab.
+  - Telegraf vẫn tự lo việc gửi MQTT và đệm dữ liệu, giống với Modbus và SNMP.
 - Sửa Point Map trong modbus-lab, rồi `./demo.sh down && ./demo.sh up`: demo đọc đúng thiết bị mới.
 - Repo modbus-lab ở chỗ khác thì chỉ đường dẫn bằng biến `MODBUS_LAB`, ví dụ `MODBUS_LAB=~/src/modbus-lab ./demo.sh up`.
 
 | Thành phần demo | Tương ứng hệ thống thật |
 |---|---|
 | `sim` (simulator modbus-lab) | Thiết bị thật: gateway đồng hồ điện, BESS, UPS, CRAH (Modbus TCP, SNMP, BACnet/IP) |
-| `telegraf-a/b` | Telegraf trên 2 server edge công nghiệp |
-| `bacnet-a/b` | Collector Python đọc BACnet trên 2 server edge |
+| `telegraf-a/b` | Telegraf trên 2 server edge công nghiệp (Modbus, SNMP, BACnet) |
 | `mqtt-a/b` (Mosquitto + bridge) | MQTT broker tại edge, store-and-forward lên cloud |
 | `edge-app` | Rule engine tại edge + ghi TimescaleDB |
 | `edge-db` (TimescaleDB) | DB tại edge, lưu 30–90 ngày |
@@ -98,7 +100,7 @@ Màn hình chia hai nửa: **trái = edge tại site**, **phải = cloud AWS**.
 - Ô "Bản ghi 10 phút qua" ở hai bên bằng nhau.
 - Mở tab thứ hai: trang simulator **http://localhost:5080**, phần khung tin. Ở đó thấy Telegraf của 2 edge node lần lượt đọc từng thiết bị, kèm byte thô và giải nghĩa.
 
-> Lời thoại: "Thiết bị ở site nói 3 giao thức: Modbus TCP qua gateway, SNMP và BACnet/IP. Telegraf và collector BACnet ở site thu thập, lưu tại chỗ và đồng thời đẩy lên cloud. Danh sách thiết bị và luật cảnh báo đều sinh từ một Point Map. Hai edge node cùng thu thập, nên hỏng một node vẫn không mất dữ liệu."
+> Lời thoại: "Thiết bị ở site nói 3 giao thức: Modbus TCP qua gateway, SNMP và BACnet/IP. Telegraf ở site thu thập cả 3 giao thức, lưu tại chỗ và đồng thời đẩy lên cloud. Danh sách thiết bị và luật cảnh báo đều sinh từ một Point Map. Hai edge node cùng thu thập, nên hỏng một node vẫn không mất dữ liệu."
 
 ### Kịch bản 2 – Mất WAN, site vẫn tự vận hành (4 phút)
 
@@ -231,7 +233,7 @@ Chưa tính thời gian poll: thiết bị được poll mỗi 2 giây, nên th�
 | Còi/đèn/SMS là dòng log và ô màu đỏ | Relay còi/đèn, modem 4G | Không có phần cứng |
 | Thiết bị là simulator modbus-lab, cùng nằm trong 1 container (mỗi thiết bị một IP) | Thiết bị thật | Không có phần cứng |
 | Không đọc `dong-ho-rs485-03` (Modbus RTU qua USB-RS485) | Bus RS-485 cắm vào một server edge | Container không mở được cổng serial ảo của container khác |
-| Collector BACnet viết riêng cho demo (`lab/bacnet_collector.py`) | Collector BACnet của dự án | modbus-lab mới có hàm đọc/ghi, chưa có collector gửi MQTT |
+| Script BACnet cho Telegraf viết riêng cho demo (`lab/bacnet_execd.py`) | Collector BACnet của dự án | modbus-lab mới có hàm đọc/ghi BACnet, chưa có collector chạy liên tục |
 | Mọi cảnh báo trong Point Map đều mức CRITICAL | Mức cảnh báo khai báo trong Point Map | Point Map chưa có trường mức cảnh báo |
 | Chưa có lệnh điều khiển (TTL), cờ AI, Mất AZ/DR | Có trong thiết kế | Thuộc bản demo đầy đủ |
 
@@ -254,15 +256,15 @@ Chưa tính thời gian poll: thiết bị được poll mỗi 2 giây, nên th�
 
 ```
 demo-a04/
-├── docker-compose.yml          # 14 service, 3 mạng: edge (10.20.0.0/24) / wan / cloud
+├── docker-compose.yml          # 13 service, 3 mạng: edge (10.20.0.0/24) / wan / cloud
 ├── demo.sh                     # lệnh điều khiển demo
 ├── telegraf/telegraf.conf      # phần chung của edge: agent + gửi MQTT (thiết bị sinh từ Point Map)
 ├── mosquitto/edge.conf         # broker edge + bridge store-and-forward
 ├── mosquitto/cloud.conf
-├── lab/                        # chạy code modbus-lab (repo được mount vào /lab)
+├── lab/                        # chạy code modbus-lab (repo được mount vào /lab); image có cả Telegraf
 │   ├── sim_entry.py            # gắn IP thật của thiết bị rồi chạy simulator --env site
 │   ├── gen_edge_config.py      # Point Map → inputs Telegraf + luật cảnh báo + thẻ thiết bị trên dashboard
-│   └── bacnet_collector.py     # đọc BACnet → MQTT tại mỗi edge node
+│   └── bacnet_execd.py         # Telegraf chạy script này (inputs.execd) để đọc BACnet
 ├── app/
 │   ├── edge_app.py             # rule engine + ghi TimescaleDB tại edge
 │   ├── cloud_writer.py         # phía cloud: ghi DB, khử trùng

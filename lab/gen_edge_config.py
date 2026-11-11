@@ -1,12 +1,13 @@
 """Sinh cấu hình edge từ Point Map của modbus-lab (Point Map là nguồn dữ liệu duy nhất).
 
   python gen_edge_config.py <thư mục ra> <dashboard gốc>
-    devices.conf        inputs Telegraf cho Modbus TCP và SNMP (generate.py của modbus-lab, môi trường site)
+    devices.conf        inputs Telegraf: Modbus TCP và SNMP (generate.py của modbus-lab, môi trường site)
+                        + BACnet qua inputs.execd (bacnet_execd.py)
     rules.json          tên site + luật cảnh báo (mục alerts của Point Map) cho rule engine edge-app
     grafana/a04.json    dashboard gốc + thẻ từng thiết bị (edge và cloud), mọi điểm đo kèm đơn vị và ngưỡng
 
 Bỏ thiết bị Modbus RTU: bus RS-485 cắm USB vào đúng một server edge, container khác không mở được.
-BACnet do bacnet_collector.py đọc (Telegraf không đọc BACnet).
+BACnet: Telegraf không có plugin, nên Telegraf chạy bacnet_execd.py (inputs.execd) để đọc.
 """
 import json
 import sys
@@ -21,7 +22,16 @@ out = Path(sys.argv[1])
 cfg = load_or_exit(DEFAULT_PATH, SITE_ENV)
 rtu = [d["name"] for d in cfg["devices"] if is_rtu(d)]
 cfg["devices"] = [d for d in cfg["devices"] if not is_rtu(d)]
-(out / "devices.conf").write_text(generate(cfg, inputs_only=True), encoding="utf-8")
+telegraf = generate(cfg, inputs_only=True)
+bacnet = [d["name"] for d in cfg["devices"] if d.get("protocol") == "bacnet"]
+if bacnet:
+    telegraf += "\n".join(["", f"# BACnet ({', '.join(bacnet)}): Telegraf chạy script đọc theo Point Map, nhận line protocol",
+                           "[[inputs.execd]]",
+                           '  command = ["python", "/demo/bacnet_execd.py"]',
+                           '  signal = "STDIN"',
+                           '  restart_delay = "2s"',
+                           '  data_format = "influx"', ""])
+(out / "devices.conf").write_text(telegraf, encoding="utf-8")
 
 
 def rule(a: dict) -> dict:

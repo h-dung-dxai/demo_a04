@@ -17,22 +17,17 @@ x-lab: &lab
   restart: unless-stopped
   volumes: ["${MODBUS_LAB:-../modbus-lab}:/lab:ro"]
 
+# Telegraf của edge node: đọc Modbus TCP, SNMP và BACnet (qua inputs.execd chạy script Python của lab)
 x-telegraf: &telegraf
-  image: telegraf:1.32
-  restart: unless-stopped
+  <<: *lab
   # cấu hình chung của edge (agent + MQTT) + inputs sinh từ Point Map
   command: telegraf --config /etc/telegraf/telegraf.conf --config /cfg/devices.conf
-  volumes: [./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro, edgecfg:/cfg:ro]
-  networks: [edge]
+  volumes:
+    - "${MODBUS_LAB:-../modbus-lab}:/lab:ro"
+    - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    - edgecfg:/cfg:ro
   depends_on:   # chỉ thu thập khi rule engine tại edge đã sẵn sàng nhận
     edge-config: { condition: service_completed_successfully }
-    sim: { condition: service_healthy }
-    edge-app: { condition: service_healthy }
-
-x-bacnet: &bacnet
-  <<: *lab
-  command: python /demo/bacnet_collector.py
-  depends_on:
     sim: { condition: service_healthy }
     edge-app: { condition: service_healthy }
 
@@ -71,10 +66,7 @@ services:
     hostname: mqtt-a
   telegraf-a:
     <<: *telegraf
-    environment: { EDGE_NAME: edge-a, MQTT_URL: "tcp://mqtt-a:1883" }
-  bacnet-a:
-    <<: *bacnet
-    environment: { EDGE_NAME: edge-a, MQTT_HOST: mqtt-a, BACNET_CLIENT: "10.20.0.5/24:47808" }
+    environment: { EDGE_NAME: edge-a, MQTT_URL: "tcp://mqtt-a:1883", BACNET_CLIENT: "10.20.0.5/24:47808" }
     networks: { edge: { ipv4_address: 10.20.0.5 } }   # = bacnet.client trong Point Map
 
   # ---------- Edge node B ----------
@@ -83,10 +75,7 @@ services:
     hostname: mqtt-b
   telegraf-b:
     <<: *telegraf
-    environment: { EDGE_NAME: edge-b, MQTT_URL: "tcp://mqtt-b:1883" }
-  bacnet-b:
-    <<: *bacnet
-    environment: { EDGE_NAME: edge-b, MQTT_HOST: mqtt-b, BACNET_CLIENT: "10.20.0.6/24:47808" }
+    environment: { EDGE_NAME: edge-b, MQTT_URL: "tcp://mqtt-b:1883", BACNET_CLIENT: "10.20.0.6/24:47808" }
     networks: { edge: { ipv4_address: 10.20.0.6 } }
 
   # ---------- Dịch vụ edge dùng chung: DB tại chỗ + rule engine ----------

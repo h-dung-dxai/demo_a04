@@ -26,9 +26,9 @@ case "${1:-help}" in
                 echo "✂  WAN đã CẮT: site không còn kết nối tới cloud.";;
   wan-restore)  docker network connect --ip 172.30.0.10 --alias mqtt-cloud "$WAN" "$($C ps -q mqtt-cloud)"
                 echo "🔌 WAN đã NỐI LẠI: edge sẽ tự gửi bù dữ liệu.";;
-  kill-edge-a)  $C stop telegraf-a bacnet-a mqtt-a
+  kill-edge-a)  $C stop telegraf-a mqtt-a
                 echo "💥 Edge node A đã TẮT. Edge node B tiếp tục thu thập.";;
-  start-edge-a) $C start mqtt-a telegraf-a bacnet-a
+  start-edge-a) $C start mqtt-a telegraf-a
                 echo "Edge node A đã chạy lại.";;
   reconcile)    $C run --rm tools python -u reconcile.py "${2:-15}";;
   *) cat <<'EOF'
@@ -40,7 +40,7 @@ Cách dùng: ./demo.sh <lệnh>
   set <điểm> <giá trị>      Đặt giá trị bất kỳ điểm nào trong Point Map, ví dụ: set bess-01.muc_pin 15
   get [điểm]                Xem giá trị hiện tại của simulator
   wan-cut | wan-restore     Cắt / nối lại WAN giữa site và cloud
-  kill-edge-a | start-edge-a  Tắt / bật edge node A (Telegraf + collector BACnet + MQTT)
+  kill-edge-a | start-edge-a  Tắt / bật edge node A (Telegraf + MQTT)
   reconcile [phút]          Đối chiếu số bản ghi edge ↔ cloud (mặc định 15 phút)
 Trang điều khiển simulator: http://localhost:5080 (đổi cổng: SIM_PORT=5090 ./demo.sh up)
 EOF
