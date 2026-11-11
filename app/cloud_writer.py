@@ -26,7 +26,7 @@ def on_message(client, userdata, msg):
     _, site, kind, *_ = msg.topic.split("/")
     d = json.loads(msg.payload)
     if kind == "tm":
-        device = d["tags"].get("name") or d["name"]
+        device = d["tags"]["device"]
         for field, value in d["fields"].items():
             db.execute("""INSERT INTO readings (site, point, ts, value, src)
                           VALUES (%s, %s, to_timestamp(%s), %s, %s) ON CONFLICT DO NOTHING""",

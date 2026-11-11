@@ -2,4 +2,5 @@ apiVersion: 1
 providers:
   - name: a04
     type: file
-    options: { path: /var/lib/grafana/dashboards }
+    # sinh bởi edge-config: dashboards/a04.json (phần cố định) + thẻ từng thiết bị từ Point Map
+    options: { path: /cfg/grafana }

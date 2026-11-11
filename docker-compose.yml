@@ -1,5 +1,6 @@
 # Demo A04: Edge Site Stack hybrid – mất WAN, gửi bù, đối chiếu, failover edge.
 # Mạng: edge (OT tại site) · wan (đường truyền site ↔ cloud) · cloud (AWS giả lập)
+# Thiết bị, địa chỉ và luật cảnh báo lấy từ Point Map của modbus-lab (mặc định ../modbus-lab, đổi bằng MODBUS_LAB).
 name: demo-a04
 
 x-app: &app
@@ -7,13 +8,27 @@ x-app: &app
   image: demo-a04-app
   restart: unless-stopped
 
-x-telegraf: &telegraf
-  image: telegraf:1.32
+# Code modbus-lab (simulator, Point Map, collector BACnet): mount nguyên repo, chỉ đọc
+x-lab: &lab
+  build:
+    context: ./lab
+    additional_contexts: { modbus-lab: "${MODBUS_LAB:-../modbus-lab}" }
+  image: demo-a04-lab
   restart: unless-stopped
-  volumes: [./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro]
-  networks: [edge]
+  volumes: ["${MODBUS_LAB:-../modbus-lab}:/lab:ro"]
+
+# Telegraf của edge node: đọc Modbus TCP, SNMP và BACnet (qua inputs.execd chạy script Python của lab)
+x-telegraf: &telegraf
+  <<: *lab
+  # cấu hình chung của edge (agent + MQTT) + inputs sinh từ Point Map
+  command: telegraf --config /etc/telegraf/telegraf.conf --config /cfg/devices.conf
+  volumes:
+    - "${MODBUS_LAB:-../modbus-lab}:/lab:ro"
+    - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    - edgecfg:/cfg:ro
   depends_on:   # chỉ thu thập khi rule engine tại edge đã sẵn sàng nhận
-    sim: { condition: service_started }
+    edge-config: { condition: service_completed_successfully }
+    sim: { condition: service_healthy }
     edge-app: { condition: service_healthy }
 
 x-edge-mqtt: &edge-mqtt
@@ -23,11 +38,27 @@ x-edge-mqtt: &edge-mqtt
   networks: [edge, wan]
 
 services:
-  # ---------- Thiết bị giả lập (Modbus TCP) ----------
+  # ---------- Thiết bị giả lập: simulator modbus-lab (Modbus TCP, SNMP, BACnet/IP) ----------
+  # Mang đúng IP thật trong Point Map; trang điều khiển http://localhost:5080
   sim:
-    <<: *app
-    command: python -u sim.py
+    <<: *lab
+    command: python /demo/sim_entry.py
+    cap_add: [NET_ADMIN]   # gắn IP của từng gateway / thiết bị vào card mạng
+    environment: { SIM_AUTO: "2" }   # giá trị dao động quanh giá trị đặt, mỗi 2 giây
+    ports: ["127.0.0.1:${SIM_PORT:-5080}:5080"]
     networks: [edge]
+    healthcheck:   # healthy khi trang điều khiển đã trả lời (mọi server thiết bị đã chạy)
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5080/api/state', timeout=2)"]
+      interval: 2s
+      retries: 30
+
+  # ---------- Sinh cấu hình edge từ Point Map (chạy một lần mỗi khi up) ----------
+  edge-config:
+    <<: *lab
+    restart: "no"
+    command: python /demo/gen_edge_config.py /cfg /grafana/a04.json
+    volumes: ["${MODBUS_LAB:-../modbus-lab}:/lab:ro", "edgecfg:/cfg", "./grafana/dashboards:/grafana:ro"]
+    network_mode: none
 
   # ---------- Edge node A ----------
   mqtt-a:
@@ -35,7 +66,8 @@ services:
     hostname: mqtt-a
   telegraf-a:
     <<: *telegraf
-    environment: { EDGE_NAME: edge-a, MQTT_URL: "tcp://mqtt-a:1883" }
+    environment: { EDGE_NAME: edge-a, MQTT_URL: "tcp://mqtt-a:1883", BACNET_CLIENT: "10.20.0.5/24:47808" }
+    networks: { edge: { ipv4_address: 10.20.0.5 } }   # = bacnet.client trong Point Map
 
   # ---------- Edge node B ----------
   mqtt-b:
@@ -43,7 +75,8 @@ services:
     hostname: mqtt-b
   telegraf-b:
     <<: *telegraf
-    environment: { EDGE_NAME: edge-b, MQTT_URL: "tcp://mqtt-b:1883" }
+    environment: { EDGE_NAME: edge-b, MQTT_URL: "tcp://mqtt-b:1883", BACNET_CLIENT: "10.20.0.6/24:47808" }
+    networks: { edge: { ipv4_address: 10.20.0.6 } }
 
   # ---------- Dịch vụ edge dùng chung: DB tại chỗ + rule engine ----------
   edge-db:
@@ -57,8 +90,13 @@ services:
     environment:
       EDGE_DB: postgresql://dcim:dcim@edge-db/dcim
       BROKERS: mqtt-a,mqtt-b
-      SITE: site01
-    depends_on: [edge-db, mqtt-a, mqtt-b]
+      RULES: /cfg/rules.json   # sinh từ Point Map
+    volumes: [edgecfg:/cfg:ro]
+    depends_on:
+      edge-config: { condition: service_completed_successfully }
+      edge-db: { condition: service_started }
+      mqtt-a: { condition: service_started }
+      mqtt-b: { condition: service_started }
     healthcheck:   # healthy khi đã subscribe được broker
       test: ["CMD", "test", "-f", "/tmp/ready"]
       interval: 2s
@@ -95,10 +133,12 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 1s
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/a04.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /cfg/grafana/a04.json
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - edgecfg:/cfg:ro   # dashboard sinh từ Point Map (edge-config)
+    depends_on:
+      edge-config: { condition: service_completed_successfully }
     networks: [edge, cloud]
 
   # ---------- Công cụ: script đối chiếu (chạy theo yêu cầu) ----------
@@ -112,8 +152,14 @@ services:
       CLOUD_DB: postgresql://dcim:dcim@cloud-db/dcim
     networks: [edge, cloud]
 
+volumes:
+  edgecfg: {}   # sinh từ Point Map: devices.conf (Telegraf), rules.json (edge-app), grafana/a04.json (dashboard)
+
 networks:
-  edge: {}
+  # Mạng OT của site: đúng dải địa chỉ trong Point Map. Docker chỉ cấp động trong .128–.254,
+  # nửa dưới dành cho thiết bị (sim) và edge node (IP cố định).
+  edge:
+    ipam: { config: [{ subnet: 10.20.0.0/24, ip_range: 10.20.0.128/25 }] }
   wan:
     ipam: { config: [{ subnet: 172.30.0.0/24 }] }
   cloud: {}
