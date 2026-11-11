@@ -1,9 +1,0 @@
-{
-  "stale_seconds": 10,
-  "thresholds": [
-    {"id": "crac01-supply-high", "point": "crac01.supply_temp", "op": ">", "value": 27,
-     "severity": "CRITICAL", "message": "Nhiệt độ gió cấp CRAC-01 cao"},
-    {"id": "ups01-load-high", "point": "ups01.load_pct", "op": ">", "value": 80,
-     "severity": "WARNING", "message": "Tải UPS-01 cao"}
-  ]
-}

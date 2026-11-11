@@ -25,14 +25,14 @@ def counts(conn):
 
 e, c = counts(edge), counts(cloud)
 print(f"\nĐỐI CHIẾU EDGE ↔ CLOUD – {minutes} phút gần nhất (không tính phút hiện tại)\n")
-print(f"{'Phút':<6} {'Điểm đo':<22} {'Edge':>6} {'Cloud':>6}  Kết quả")
-print("-" * 56)
+print(f"{'Phút':<6} {'Điểm đo':<28} {'Edge':>6} {'Cloud':>6}  Kết quả")
+print("-" * 62)
 bad = 0
 for key in sorted(e.keys() | c.keys()):
     ne, nc = e.get(key, 0), c.get(key, 0)
     ok = ne == nc
     bad += not ok
-    print(f"{key[0]:<6} {key[1]:<22} {ne:>6} {nc:>6}  {'✓ khớp' if ok else '✗ LỆCH'}")
+    print(f"{key[0]:<6} {key[1]:<28} {ne:>6} {nc:>6}  {'✓ khớp' if ok else '✗ LỆCH'}")
 
 total_e, total_c = sum(e.values()), sum(c.values())
 backfilled = cloud.execute(
@@ -42,7 +42,7 @@ backfilled = cloud.execute(
 alerts_e = {r[0] for r in edge.execute("SELECT id FROM alerts").fetchall()}
 alerts_c = {r[0] for r in cloud.execute("SELECT id FROM alerts").fetchall()}
 
-print("-" * 56)
+print("-" * 62)
 print(f"Tổng bản ghi        edge = {total_e}   cloud = {total_c}")
 print(f"Bản ghi trùng       0 (khóa duy nhất site + point + ts)")
 print(f"Bản ghi gửi bù      {backfilled} (đến cloud trễ > 10s so với thời điểm đo)")

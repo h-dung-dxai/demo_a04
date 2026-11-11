@@ -20,7 +20,7 @@
    },
    "options": {
     "mode": "markdown",
-    "content": "## 🏭 EDGE – Container DC site01 (tại chỗ)"
+    "content": "## 🏭 EDGE – Container DC container-01 (tại chỗ)"
    },
    "id": 1
   },
@@ -30,7 +30,7 @@
    "gridPos": {
     "x": 12,
     "y": 0,
-    "w": 12,
+    "w": 10,
     "h": 2
    },
    "options": {
@@ -38,6 +38,21 @@
     "content": "## ☁️ CLOUD – AWS Tokyo (giả lập)"
    },
    "id": 2
+  },
+  {
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "x": 22,
+    "y": 0,
+    "w": 2,
+    "h": 2
+   },
+   "options": {
+    "mode": "html",
+    "content": "<div style=\"text-align:right;font-size:28px;line-height:1.6\"><a href=\"/d/a04?theme=light\" target=\"_self\" title=\"Giao diện sáng (phòng sáng, máy chiếu)\">☀️</a>&nbsp;&nbsp;<a href=\"/d/a04?theme=dark\" target=\"_self\" title=\"Giao diện tối\">🌙</a></div>"
+   },
+   "id": 15
   },
   {
    "type": "stat",
@@ -290,7 +305,7 @@
   },
   {
    "type": "timeseries",
-   "title": "CRAC-01 nhiệt độ gió cấp (°C) – edge",
+   "title": "CRAH-01 nhiệt độ gió cấp (°C, BACnet) – edge",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "edge"
@@ -308,7 +323,7 @@
       "type": "grafana-postgresql-datasource",
       "uid": "edge"
      },
-     "rawSql": "SELECT ts AS time, value AS \"crac01.supply_temp\" FROM readings WHERE point = 'crac01.supply_temp' AND $__timeFilter(ts) ORDER BY 1",
+     "rawSql": "SELECT ts AS time, value AS \"crah-01.nhiet_do_cap\" FROM readings WHERE point = 'crah-01.nhiet_do_cap' AND $__timeFilter(ts) ORDER BY 1",
      "format": "time_series",
      "rawQuery": true,
      "editorMode": "code"
@@ -358,7 +373,7 @@
   },
   {
    "type": "timeseries",
-   "title": "CRAC-01 nhiệt độ gió cấp (°C) – cloud",
+   "title": "CRAH-01 nhiệt độ gió cấp (°C, BACnet) – cloud",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "cloud"
@@ -376,7 +391,7 @@
       "type": "grafana-postgresql-datasource",
       "uid": "cloud"
      },
-     "rawSql": "SELECT ts AS time, value AS \"crac01.supply_temp\" FROM readings WHERE point = 'crac01.supply_temp' AND $__timeFilter(ts) ORDER BY 1",
+     "rawSql": "SELECT ts AS time, value AS \"crah-01.nhiet_do_cap\" FROM readings WHERE point = 'crah-01.nhiet_do_cap' AND $__timeFilter(ts) ORDER BY 1",
      "format": "time_series",
      "rawQuery": true,
      "editorMode": "code"
@@ -394,7 +409,7 @@
      },
      "color": {
       "mode": "fixed",
-      "fixedColor": "blue"
+      "fixedColor": "green"
      },
      "thresholds": {
       "mode": "absolute",
@@ -426,7 +441,7 @@
   },
   {
    "type": "timeseries",
-   "title": "UPS-01 tải (%) – edge",
+   "title": "Công suất tủ phân phối (W, Modbus qua gateway) – edge",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "edge"
@@ -444,7 +459,7 @@
       "type": "grafana-postgresql-datasource",
       "uid": "edge"
      },
-     "rawSql": "SELECT ts AS time, value AS \"ups01.load_pct\" FROM readings WHERE point = 'ups01.load_pct' AND $__timeFilter(ts) ORDER BY 1",
+     "rawSql": "SELECT ts AS time, point AS metric, value FROM readings WHERE point IN ('dong-ho-dien-01.cong_suat', 'dong-ho-dien-02.cong_suat') AND $__timeFilter(ts) ORDER BY 1",
      "format": "time_series",
      "rawQuery": true,
      "editorMode": "code"
@@ -457,12 +472,11 @@
       "lineWidth": 2,
       "showPoints": "never",
       "thresholdsStyle": {
-       "mode": "line+area"
+       "mode": "off"
       }
      },
      "color": {
-      "mode": "fixed",
-      "fixedColor": "green"
+      "mode": "palette-classic"
      },
      "thresholds": {
       "mode": "absolute",
@@ -470,10 +484,6 @@
        {
         "color": "transparent",
         "value": null
-       },
-       {
-        "color": "red",
-        "value": 80
        }
       ]
      }
@@ -494,7 +504,7 @@
   },
   {
    "type": "timeseries",
-   "title": "UPS-01 tải (%) – cloud",
+   "title": "Công suất tủ phân phối (W, Modbus qua gateway) – cloud",
    "datasource": {
     "type": "grafana-postgresql-datasource",
     "uid": "cloud"
@@ -512,7 +522,7 @@
       "type": "grafana-postgresql-datasource",
       "uid": "cloud"
      },
-     "rawSql": "SELECT ts AS time, value AS \"ups01.load_pct\" FROM readings WHERE point = 'ups01.load_pct' AND $__timeFilter(ts) ORDER BY 1",
+     "rawSql": "SELECT ts AS time, point AS metric, value FROM readings WHERE point IN ('dong-ho-dien-01.cong_suat', 'dong-ho-dien-02.cong_suat') AND $__timeFilter(ts) ORDER BY 1",
      "format": "time_series",
      "rawQuery": true,
      "editorMode": "code"
@@ -525,12 +535,11 @@
       "lineWidth": 2,
       "showPoints": "never",
       "thresholdsStyle": {
-       "mode": "line+area"
+       "mode": "off"
       }
      },
      "color": {
-      "mode": "fixed",
-      "fixedColor": "blue"
+      "mode": "palette-classic"
      },
      "thresholds": {
       "mode": "absolute",
@@ -538,10 +547,6 @@
        {
         "color": "transparent",
         "value": null
-       },
-       {
-        "color": "red",
-        "value": 80
        }
       ]
      }
@@ -705,6 +710,156 @@
     "cellHeight": "sm"
    },
    "id": 12
+  },
+  {
+   "type": "table",
+   "title": "Giá trị mới nhất – mọi điểm đo trong Point Map (edge)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 31,
+    "w": 12,
+    "h": 15
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT DISTINCT ON (point) point AS \"Điểm đo\", round(value::numeric, 2) AS \"Giá trị\", to_char(ts AT TIME ZONE 'Asia/Ho_Chi_Minh', 'HH24:MI:SS') AS \"Lúc đo\", round(EXTRACT(EPOCH FROM now() - ts)) AS \"Giây trước\", src AS \"Edge node\" FROM readings WHERE ts > now() - interval '10 minutes' ORDER BY point, ts DESC",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "minWidth": 50
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Giây trước"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       },
+       {
+        "id": "thresholds",
+        "value": {
+         "mode": "absolute",
+         "steps": [
+          {
+           "color": "green",
+           "value": null
+          },
+          {
+           "color": "red",
+           "value": 10
+          }
+         ]
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 100
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   },
+   "id": 13
+  },
+  {
+   "type": "table",
+   "title": "Giá trị mới nhất – mọi điểm đo trong Point Map (cloud)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 31,
+    "w": 12,
+    "h": 15
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT DISTINCT ON (point) point AS \"Điểm đo\", round(value::numeric, 2) AS \"Giá trị\", to_char(ts AT TIME ZONE 'Asia/Ho_Chi_Minh', 'HH24:MI:SS') AS \"Lúc đo\", round(EXTRACT(EPOCH FROM now() - ts)) AS \"Giây trước\", src AS \"Edge node\" FROM readings WHERE ts > now() - interval '10 minutes' ORDER BY point, ts DESC",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "minWidth": 50
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Giây trước"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       },
+       {
+        "id": "thresholds",
+        "value": {
+         "mode": "absolute",
+         "steps": [
+          {
+           "color": "green",
+           "value": null
+          },
+          {
+           "color": "red",
+           "value": 10
+          }
+         ]
+        }
+       },
+       {
+        "id": "custom.width",
+        "value": 100
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   },
+   "id": 14
   }
  ],
  "editable": true,

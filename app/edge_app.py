@@ -15,9 +15,9 @@ import paho.mqtt.client as mqtt
 
 from common import db_connect
 
-SITE = os.environ.get("SITE", "site01")
 BROKERS = os.environ["BROKERS"].split(",")
-RULES = json.load(open(os.path.join(os.path.dirname(__file__), "rules.json")))
+RULES = json.load(open(os.environ["RULES"]))  # sinh từ Point Map (lab/gen_edge_config.py)
+SITE = RULES["site"]
 OPS = {">": lambda a, b: a > b, "<": lambda a, b: a < b}
 RED, GREEN, RESET = "\033[1;31m", "\033[1;32m", "\033[0m"
 
@@ -33,7 +33,7 @@ db.execute("""CREATE TABLE IF NOT EXISTS alerts (
   id uuid PRIMARY KEY, site text, rule text, point text, severity text, message text,
   value double precision, raised_at timestamptz, cleared_at timestamptz, latency_s double precision)""")
 
-last_seen = {}   # point -> thời điểm nhận gần nhất
+last_seen = {}   # thiết bị -> thời điểm nhận gần nhất
 active = {}      # rule key -> alert đang bật
 clients = []
 
@@ -78,25 +78,25 @@ def set_alert(key, on, rule, point, value, measured_ts):
 
 def on_message(client, userdata, msg):
     d = json.loads(msg.payload)
-    device = d["tags"].get("name") or d["name"]
+    device = d["tags"]["device"]  # tag gắn theo Point Map (Telegraf và collector BACnet)
     ts = d["timestamp"]
+    last_seen[device] = time.time()
     for field, value in d["fields"].items():
         point = f"{device}.{field}"
         sql("""INSERT INTO readings (site, point, ts, value, src) VALUES (%s, %s, to_timestamp(%s), %s, %s)
                ON CONFLICT DO NOTHING""", (SITE, point, ts, value, d["tags"].get("host")))
-        last_seen[point] = time.time()
         for r in RULES["thresholds"]:
             if r["point"] == point:
                 set_alert(r["id"], OPS[r["op"]](value, r["value"]), r, point, value, ts)
 
 
 def watchdog():
-    """Cảnh báo 'mất liên lạc' khi một điểm đo không có dữ liệu quá stale_seconds."""
+    """Cảnh báo 'mất liên lạc' khi một thiết bị không có dữ liệu quá stale_seconds (một cảnh báo mỗi thiết bị)."""
     rule = {"severity": "CRITICAL", "message": "Mất liên lạc thiết bị"}
     while True:
         now = time.time()
-        for point, t in list(last_seen.items()):
-            set_alert(f"stale:{point}", now - t > RULES["stale_seconds"], rule, point, None, None)
+        for device, t in list(last_seen.items()):
+            set_alert(f"stale:{device}", now - t > RULES["stale_seconds"], rule, device, None, None)
         time.sleep(1)
 
 
