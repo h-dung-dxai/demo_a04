@@ -22,7 +22,9 @@ out = Path(sys.argv[1])
 cfg = load_or_exit(DEFAULT_PATH, SITE_ENV)
 rtu = [d["name"] for d in cfg["devices"] if is_rtu(d)]
 cfg["devices"] = [d for d in cfg["devices"] if not is_rtu(d)]
-telegraf = generate(cfg, inputs_only=True)
+# chỉ lấy inputs: [agent] và outputs đã có trong telegraf/telegraf.conf (trùng [agent] thì Telegraf báo lỗi)
+telegraf = "\n\n".join(b for b in generate(cfg).split("\n\n")
+                       if not b.lstrip().startswith(("[agent]", "[[outputs.")))
 bacnet = [d["name"] for d in cfg["devices"] if d.get("protocol") == "bacnet"]
 if bacnet:
     telegraf += "\n".join(["", f"# BACnet ({', '.join(bacnet)}): Telegraf chạy script đọc theo Point Map, nhận line protocol",
