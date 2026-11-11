@@ -1,5 +1,7 @@
 # Demo A04 – Edge / Cloud: mất WAN, gửi bù, đối chiếu, failover
 
+Tiếng Việt | [日本語](README.ja.md)
+
 Demo cho **Phần 2 · Phân vai On-prem / Cloud, dự phòng, đồng bộ lại và vận hành khi lỗi** (việc A04, quyết định D03 của biên bản kickoff 06/11/2026).
 Chạy hoàn toàn trên 1 máy bằng Docker, không cần thiết bị thật hay tài khoản AWS.
 
