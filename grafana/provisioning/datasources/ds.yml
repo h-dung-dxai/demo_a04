@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  - name: Edge (site01)
+    uid: edge
+    type: grafana-postgresql-datasource
+    url: edge-db:5432
+    user: dcim
+    secureJsonData: { password: dcim }
+    jsonData: { database: dcim, sslmode: disable, postgresVersion: 1600, timescaledb: true }
+  - name: Cloud (AWS giả lập)
+    uid: cloud
+    type: grafana-postgresql-datasource
+    url: cloud-db:5432
+    user: dcim
+    secureJsonData: { password: dcim }
+    jsonData: { database: dcim, sslmode: disable, postgresVersion: 1600 }

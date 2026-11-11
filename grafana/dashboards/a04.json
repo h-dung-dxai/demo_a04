@@ -1,0 +1,714 @@
+{
+ "uid": "a04",
+ "title": "Demo A04 – Edge / Cloud",
+ "refresh": "2s",
+ "time": {
+  "from": "now-10m",
+  "to": "now"
+ },
+ "schemaVersion": 39,
+ "timezone": "browser",
+ "panels": [
+  {
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 2
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "## 🏭 EDGE – Container DC site01 (tại chỗ)"
+   },
+   "id": 1
+  },
+  {
+   "type": "text",
+   "title": "",
+   "gridPos": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 2
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "## ☁️ CLOUD – AWS Tokyo (giả lập)"
+   },
+   "id": 2
+  },
+  {
+   "type": "stat",
+   "title": "Cảnh báo đang bật (còi / đèn)",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 2,
+    "w": 6,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT count(*) AS \"đang bật\" FROM alerts WHERE cleared_at IS NULL",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "options": {
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "auto",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 1
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "id": 3
+  },
+  {
+   "type": "stat",
+   "title": "Bản ghi 10 phút qua",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 6,
+    "y": 2,
+    "w": 6,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT count(*) AS \"bản ghi\" FROM readings WHERE ts > now() - interval '10 minutes' AND ts < now() - interval '5 seconds'",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "options": {
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "auto",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "id": 4
+  },
+  {
+   "type": "stat",
+   "title": "Giây từ lần nhận dữ liệu cuối",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 2,
+    "w": 6,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT EXTRACT(EPOCH FROM now() - max(received_at)) AS \"giây\" FROM readings",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "options": {
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "auto",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "decimals": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 10
+       }
+      ]
+     },
+     "mappings": [
+      {
+       "type": "range",
+       "options": {
+        "from": 10,
+        "to": 1000000000000.0,
+        "result": {
+         "text": "SITE MẤT TÍN HIỆU",
+         "color": "red",
+         "index": 0
+        }
+       }
+      }
+     ]
+    },
+    "overrides": []
+   },
+   "id": 5
+  },
+  {
+   "type": "stat",
+   "title": "Bản ghi 10 phút qua",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 18,
+    "y": 2,
+    "w": 6,
+    "h": 5
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT count(*) AS \"bản ghi\" FROM readings WHERE ts > now() - interval '10 minutes' AND ts < now() - interval '5 seconds'",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "options": {
+    "colorMode": "background",
+    "graphMode": "none",
+    "textMode": "auto",
+    "reduceOptions": {
+     "calcs": [
+      "lastNotNull"
+     ],
+     "fields": "",
+     "values": false
+    }
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "none",
+     "decimals": 0,
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "blue",
+        "value": null
+       }
+      ]
+     },
+     "mappings": []
+    },
+    "overrides": []
+   },
+   "id": 6
+  },
+  {
+   "type": "timeseries",
+   "title": "CRAC-01 nhiệt độ gió cấp (°C) – edge",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 7,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT ts AS time, value AS \"crac01.supply_temp\" FROM readings WHERE point = 'crac01.supply_temp' AND $__timeFilter(ts) ORDER BY 1",
+     "format": "time_series",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "insertNulls": 5000,
+      "lineWidth": 2,
+      "showPoints": "never",
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "green"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 27
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   },
+   "id": 7
+  },
+  {
+   "type": "timeseries",
+   "title": "CRAC-01 nhiệt độ gió cấp (°C) – cloud",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 7,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT ts AS time, value AS \"crac01.supply_temp\" FROM readings WHERE point = 'crac01.supply_temp' AND $__timeFilter(ts) ORDER BY 1",
+     "format": "time_series",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "insertNulls": 5000,
+      "lineWidth": 2,
+      "showPoints": "never",
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "blue"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 27
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   },
+   "id": 8
+  },
+  {
+   "type": "timeseries",
+   "title": "UPS-01 tải (%) – edge",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 15,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT ts AS time, value AS \"ups01.load_pct\" FROM readings WHERE point = 'ups01.load_pct' AND $__timeFilter(ts) ORDER BY 1",
+     "format": "time_series",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "insertNulls": 5000,
+      "lineWidth": 2,
+      "showPoints": "never",
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "green"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   },
+   "id": 9
+  },
+  {
+   "type": "timeseries",
+   "title": "UPS-01 tải (%) – cloud",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 15,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT ts AS time, value AS \"ups01.load_pct\" FROM readings WHERE point = 'ups01.load_pct' AND $__timeFilter(ts) ORDER BY 1",
+     "format": "time_series",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "insertNulls": 5000,
+      "lineWidth": 2,
+      "showPoints": "never",
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "blue"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 80
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   },
+   "id": 10
+  },
+  {
+   "type": "table",
+   "title": "Cảnh báo tại edge",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "edge"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 23,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "edge"
+     },
+     "rawSql": "SELECT to_char(raised_at AT TIME ZONE 'Asia/Ho_Chi_Minh','HH24:MI:SS') AS \"Bật\", severity AS \"Mức\", message AS \"Nội dung\", point AS \"Điểm đo\", round(value::numeric,1) AS \"Giá trị\", COALESCE(to_char(cleared_at AT TIME ZONE 'Asia/Ho_Chi_Minh','HH24:MI:SS'),'ĐANG BẬT') AS \"Tắt\" FROM alerts ORDER BY raised_at DESC LIMIT 12",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "minWidth": 50
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Tắt"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "ĐANG BẬT": {
+            "color": "red",
+            "index": 0
+           }
+          }
+         }
+        ]
+       },
+       {
+        "id": "custom.width",
+        "value": 90
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   },
+   "id": 11
+  },
+  {
+   "type": "table",
+   "title": "Cảnh báo cloud nhận được từ edge",
+   "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "cloud"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 23,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "grafana-postgresql-datasource",
+      "uid": "cloud"
+     },
+     "rawSql": "SELECT to_char(raised_at AT TIME ZONE 'Asia/Ho_Chi_Minh','HH24:MI:SS') AS \"Bật\", severity AS \"Mức\", message AS \"Nội dung\", point AS \"Điểm đo\", round(value::numeric,1) AS \"Giá trị\", COALESCE(to_char(cleared_at AT TIME ZONE 'Asia/Ho_Chi_Minh','HH24:MI:SS'),'ĐANG BẬT') AS \"Tắt\" FROM alerts ORDER BY raised_at DESC LIMIT 12",
+     "format": "table",
+     "rawQuery": true,
+     "editorMode": "code"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "minWidth": 50
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "Tắt"
+      },
+      "properties": [
+       {
+        "id": "custom.cellOptions",
+        "value": {
+         "type": "color-text"
+        }
+       },
+       {
+        "id": "mappings",
+        "value": [
+         {
+          "type": "value",
+          "options": {
+           "ĐANG BẬT": {
+            "color": "red",
+            "index": 0
+           }
+          }
+         }
+        ]
+       },
+       {
+        "id": "custom.width",
+        "value": 90
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "showHeader": true,
+    "cellHeight": "sm"
+   },
+   "id": 12
+  }
+ ],
+ "editable": true,
+ "tags": [
+  "a04"
+ ]
+}

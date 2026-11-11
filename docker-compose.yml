@@ -1,0 +1,119 @@
+# Demo A04: Edge Site Stack hybrid – mất WAN, gửi bù, đối chiếu, failover edge.
+# Mạng: edge (OT tại site) · wan (đường truyền site ↔ cloud) · cloud (AWS giả lập)
+name: demo-a04
+
+x-app: &app
+  build: ./app
+  image: demo-a04-app
+  restart: unless-stopped
+
+x-telegraf: &telegraf
+  image: telegraf:1.32
+  restart: unless-stopped
+  volumes: [./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro]
+  networks: [edge]
+  depends_on:   # chỉ thu thập khi rule engine tại edge đã sẵn sàng nhận
+    sim: { condition: service_started }
+    edge-app: { condition: service_healthy }
+
+x-edge-mqtt: &edge-mqtt
+  image: eclipse-mosquitto:2.0.20
+  restart: unless-stopped
+  volumes: [./mosquitto/edge.conf:/mosquitto/config/mosquitto.conf:ro]
+  networks: [edge, wan]
+
+services:
+  # ---------- Thiết bị giả lập (Modbus TCP) ----------
+  sim:
+    <<: *app
+    command: python -u sim.py
+    networks: [edge]
+
+  # ---------- Edge node A ----------
+  mqtt-a:
+    <<: *edge-mqtt
+    hostname: mqtt-a
+  telegraf-a:
+    <<: *telegraf
+    environment: { EDGE_NAME: edge-a, MQTT_URL: "tcp://mqtt-a:1883" }
+
+  # ---------- Edge node B ----------
+  mqtt-b:
+    <<: *edge-mqtt
+    hostname: mqtt-b
+  telegraf-b:
+    <<: *telegraf
+    environment: { EDGE_NAME: edge-b, MQTT_URL: "tcp://mqtt-b:1883" }
+
+  # ---------- Dịch vụ edge dùng chung: DB tại chỗ + rule engine ----------
+  edge-db:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment: { POSTGRES_USER: dcim, POSTGRES_PASSWORD: dcim, POSTGRES_DB: dcim }
+    networks: [edge]
+  edge-app:
+    <<: *app
+    command: python -u edge_app.py
+    environment:
+      EDGE_DB: postgresql://dcim:dcim@edge-db/dcim
+      BROKERS: mqtt-a,mqtt-b
+      SITE: site01
+    depends_on: [edge-db, mqtt-a, mqtt-b]
+    healthcheck:   # healthy khi đã subscribe được broker
+      test: ["CMD", "test", "-f", "/tmp/ready"]
+      interval: 2s
+      retries: 60
+    networks: [edge]
+
+  # ---------- Cloud (giả lập AWS IoT Core + Aurora) ----------
+  mqtt-cloud:
+    image: eclipse-mosquitto:2.0.20
+    restart: unless-stopped
+    volumes: [./mosquitto/cloud.conf:/mosquitto/config/mosquitto.conf:ro]
+    networks:
+      wan: { ipv4_address: 172.30.0.10 }   # IP cố định: bridge ở edge không phụ thuộc DNS
+      cloud: {}
+  cloud-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: dcim, POSTGRES_PASSWORD: dcim, POSTGRES_DB: dcim }
+    networks: [cloud]
+  cloud-writer:
+    <<: *app
+    command: python -u cloud_writer.py
+    environment: { CLOUD_DB: "postgresql://dcim:dcim@cloud-db/dcim" }
+    depends_on: [cloud-db, mqtt-cloud]
+    networks: [cloud]
+
+  # ---------- Màn hình: Grafana (bên trái = edge, bên phải = cloud) ----------
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    ports: ["${GRAFANA_PORT:-3300}:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: 1s
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/a04.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks: [edge, cloud]
+
+  # ---------- Công cụ: script đối chiếu (chạy theo yêu cầu) ----------
+  tools:
+    <<: *app
+    profiles: [tools]
+    restart: "no"
+    command: python -u reconcile.py
+    environment:
+      EDGE_DB: postgresql://dcim:dcim@edge-db/dcim
+      CLOUD_DB: postgresql://dcim:dcim@cloud-db/dcim
+    networks: [edge, cloud]
+
+networks:
+  edge: {}
+  wan:
+    ipam: { config: [{ subnet: 172.30.0.0/24 }] }
+  cloud: {}
