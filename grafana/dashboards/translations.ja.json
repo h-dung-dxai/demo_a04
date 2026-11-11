@@ -1,0 +1,37 @@
+{
+ "_ghi_chu": "Bản dịch tiếng Nhật của dashboard (lab/gen_edge_config.py sinh a04-ja). dashboard: cụm từ tiếng Việt trong a04.json -> tiếng Nhật, thay cụm dài trước. cards: chữ của thẻ thiết bị. Tên thiết bị, điểm đo, nội dung cảnh báo lấy từ nhãn ja trong Point Map.",
+ "dashboard": {
+  "Demo A04 – Edge / Cloud": "デモ A04 – Edge / Cloud",
+  "## 🏭 EDGE – Container DC container-01 (tại chỗ)": "## 🏭 EDGE – コンテナ DC container-01（現地）",
+  "## ☁️ CLOUD – AWS Tokyo (giả lập)": "## ☁️ CLOUD – AWS 東京（模擬）",
+  "Cảnh báo đang bật (còi / đèn)": "発報中の警報（ブザー／警告灯）",
+  "AS \"đang bật\"": "AS \"発報中\"",
+  "Bản ghi 10 phút qua": "直近 10 分のレコード数",
+  "AS \"bản ghi\"": "AS \"レコード\"",
+  "Giây từ lần nhận dữ liệu cuối": "最終受信からの経過時間",
+  "AS \"giây\"": "AS \"秒\"",
+  "SITE MẤT TÍN HIỆU": "サイト信号途絶",
+  "CRAH-01 nhiệt độ gió cấp (°C, BACnet)": "CRAH-01 給気温度（°C、BACnet）",
+  "Công suất tủ phân phối (W, Modbus qua gateway)": "分電盤の電力（W、ゲートウェイ経由 Modbus）",
+  "Cảnh báo cloud nhận được từ edge": "クラウドが Edge から受信した警報",
+  "Cảnh báo tại edge": "Edge の警報",
+  "Giá trị mới nhất – mọi điểm đo trong Point Map": "最新値 – Point Map の全計測点",
+  "ĐANG BẬT": "発報中",
+  "Giây trước": "経過秒数",
+  "Lúc đo": "計測時刻",
+  "Điểm đo": "計測点",
+  "Nội dung": "内容",
+  "Giá trị": "値",
+  "Mức": "重要度",
+  "Bật": "発報",
+  "Tắt": "解除"
+ },
+ "cards": {
+  "device": "機器",
+  "via_tcp": "TCP 経由",
+  "threshold": "閾値",
+  "row": "Point Map の機器 – {devices} 台、{points} 計測点{skipped} · 左 = Edge、右 = クラウド",
+  "skipped": "（RS-485 未読取：{names}）",
+  "stale": "機器通信途絶"
+ }
+}

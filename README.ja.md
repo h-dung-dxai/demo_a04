@@ -43,7 +43,7 @@ Docker で 1 台の PC 上だけで動作し、実機や AWS アカウントは�
 - `edge-config` は `up` のたびに 1 回だけ実行され、Point Map から 3 つのファイルを生成します：
   - Telegraf 設定：Modbus TCP と SNMP は modbus-lab の `generate.py` で生成、BACnet は `inputs.execd` プラグイン経由；
   - `edge-app` 用の警報ルール：Point Map の `alerts` 項目から生成；
-  - Grafana ダッシュボード：固定部分 `grafana/dashboards/a04.json` に機器ごとのカードを追加。
+  - Grafana ダッシュボード（ベトナム語 `a04`、日本語 `a04-ja`）：固定部分 `grafana/dashboards/a04.json` に機器ごとのカードを追加。日本語版は `grafana/dashboards/translations.ja.json` で翻訳し、機器名・計測点名・警報内容は Point Map の `ja` ラベルを使用。
 - **全機器を Telegraf で読み取ります**（BACnet を含む）：
   - Telegraf には BACnet 読み取りプラグインがないため、`inputs.execd` でスクリプト `lab/bacnet_execd.py` を実行します。
   - このスクリプトは modbus-lab の `bacnet_io.py` を再利用しています。
@@ -84,6 +84,7 @@ cd demo-a04
 ```
 
 **http://localhost:3300** を開き、最初のデータが来るまで約 20 秒待ちます。ログインは不要です。
+右上の **Tiếng Việt** / **日本語** ボタンでダッシュボードの言語を切り替えます（日本語版：http://localhost:3300/d/a04-ja）。
 もう 1 つターミナルを開き、Edge のルールエンジンの動きをリアルタイムで表示します：
 
 ```bash

@@ -41,7 +41,7 @@ Demo chứng minh 4 điều:
 - `edge-config` chạy một lần mỗi khi `up`. Nó sinh 3 file từ Point Map:
   - cấu hình Telegraf: Modbus TCP và SNMP sinh bằng `generate.py` của modbus-lab, BACnet qua plugin `inputs.execd`;
   - luật cảnh báo cho `edge-app`, lấy từ mục `alerts` của Point Map;
-  - dashboard Grafana: phần cố định `grafana/dashboards/a04.json`, ghép thêm thẻ của từng thiết bị.
+  - dashboard Grafana bằng tiếng Việt (`a04`) và tiếng Nhật (`a04-ja`): phần cố định `grafana/dashboards/a04.json`, ghép thêm thẻ của từng thiết bị. Bản tiếng Nhật dịch theo `grafana/dashboards/translations.ja.json`. Tên thiết bị, tên điểm đo và nội dung cảnh báo lấy nhãn `ja` trong Point Map.
 - **Mọi thiết bị đều đọc bằng Telegraf**, gồm cả BACnet:
   - Telegraf không có plugin đọc BACnet, nên dùng `inputs.execd` chạy script `lab/bacnet_execd.py`.
   - Script dùng lại `bacnet_io.py` của modbus-lab.
@@ -82,6 +82,7 @@ cd demo-a04
 ```
 
 Mở **http://localhost:3300** và đợi khoảng 20 giây để có dữ liệu đầu tiên. Không cần đăng nhập.
+Nút **Tiếng Việt** / **日本語** ở góc trên bên phải dùng để chuyển ngôn ngữ dashboard (bản tiếng Nhật: http://localhost:3300/d/a04-ja).
 Mở thêm một terminal để xem rule engine tại edge chạy realtime:
 
 ```bash
